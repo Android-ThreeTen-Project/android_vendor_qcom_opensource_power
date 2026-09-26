@@ -146,6 +146,34 @@ static int resources_launch[] = {
 };
 // clang-format on
 
+int legacy_process_boost(int hint_id, int duration, int type) {
+    int* resources;
+    int num_resources;
+
+    if (duration <= 0) return 0;
+
+    /* The old perfd accepts resource locks, but has no perf_hint API. */
+    if (hint_id == VENDOR_HINT_SCROLL_BOOST) {
+        if (duration > 1000) {
+            resources = resources_interaction_fling_boost;
+            num_resources = ARRAY_SIZE(resources_interaction_fling_boost);
+        } else {
+            resources = resources_interaction_boost;
+            num_resources = ARRAY_SIZE(resources_interaction_boost);
+        }
+    } else if (hint_id == VENDOR_HINT_FIRST_LAUNCH_BOOST) {
+        resources = resources_launch;
+        num_resources = ARRAY_SIZE(resources_launch);
+    } else {
+        return 0;
+    }
+
+    /* The common interaction path releases the lock on idle. Bound its timer
+     * as well, so a failed release cannot leave a long-lived boost behind. */
+    if (duration > 5000) duration = 5000;
+    return interaction_with_handle(0, duration, num_resources, resources);
+}
+
 int power_hint_override(power_hint_t hint, void* data) {
     int ret_val = HINT_NONE;
     switch (hint) {

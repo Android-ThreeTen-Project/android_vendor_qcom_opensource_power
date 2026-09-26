@@ -78,9 +78,16 @@ static struct timespec s_previous_boost_timespec;
 static int s_previous_duration = 0;
 static int prev_interaction_handle = -1;
 
+int __attribute__((weak)) legacy_process_boost(int hint_id, int duration, int type) {
+    return 0;
+}
+
 int process_boost(int hint_id, int duration, int type) {
     ALOGV("%s: acquiring perf lock", __func__);
     int boost_handle = perf_hint_enable_with_type(hint_id, duration, type);
+    if (!CHECK_HANDLE(boost_handle)) {
+        boost_handle = legacy_process_boost(hint_id, duration, type);
+    }
     if (!CHECK_HANDLE(boost_handle)) {
         ALOGE("Failed process_boost for boost_handle");
     }
